@@ -103,58 +103,35 @@ def edit_resume_view(request):
 
     if request.method == 'POST':
         form = ResumeUploadForm(request.POST, request.FILES)
-        action = request.POST.get('action')
-
         if form.is_valid():
             resume_file = form.cleaned_data['resume']
 
-            # Read resume text
+            # Read resume content
             try:
                 content = resume_file.read()
                 resume_text = content.decode('utf-8', errors='ignore')
             except:
                 resume_text = "[Error reading resume]"
 
-            if action == 'edit':
-                # Get edit suggestions
+            # Call Ollama for edit suggestions
+            try:
                 prompt = (
-                    "You're a professional resume editor. Check this resume for grammar, formatting, and give improvement suggestions. "
-                    "Return response as JSON with keys: grammar, formatting, corrections.\n"
+                    "You are a professional resume editor. "
+                    "Review the following resume for grammar mistakes, formatting issues, and suggest corrections or improvements. "
+                    "Do NOT return the resume itself or any personal data. Do NOT return the resume in JSON format. "
+                    "Return your response as JSON with keys: grammar (list), formatting (list), corrections (list). "
+                    "Example: {\"grammar\": [..], \"formatting\": [..], \"corrections\": [..]}\n"
                     f"Resume: {resume_text}"
                 )
-                try:
-                    response = ollama.generate(model="llama3.2:1b", prompt=prompt)
-                    raw = response.get('response', '')
-                    start = raw.find('{')
-                    end = raw.rfind('}') + 1
-                    json_str = raw[start:end]
-                    edit_suggestions = json.loads(json_str)
+                response = ollama.generate(model="llama3.2:1b", prompt=prompt)
+                raw = response['response'] if 'response' in response else response
+                start = raw.find('{')
+                end = raw.rfind('}') + 1
+                json_str = raw[start:end]
+                edit_suggestions = json.loads(json_str)
 
-                    request.session['resume_text'] = resume_text
-                    request.session['edit_suggestions'] = json_str
-                except Exception as e:
-                    edit_suggestions = {"error": str(e)}
-
-            elif action == 'generate':
-                # Build improved resume from saved data
-                resume_text = request.session.get('resume_text', '')
-                suggestions = json.loads(request.session.get('edit_suggestions', '{}'))
-                corrections = suggestions.get('corrections', [])
-
-                # Generate DOCX
-                doc = Document()
-                doc.add_heading("Updated Resume", level=0)
-                doc.add_paragraph(resume_text)
-                doc.add_heading("AI Applied Improvements", level=1)
-                for correction in corrections:
-                    doc.add_paragraph(f"• {correction}")
-
-                file_stream = io.BytesIO()
-                doc.save(file_stream)
-                file_stream.seek(0)
-
-                return FileResponse(file_stream, as_attachment=True, filename='Updated_Resume.docx')
-
+            except Exception as e:
+                edit_suggestions = {"error": str(e)}
     return render(request, 'edit.html', {
         'form': form,
         'edit_suggestions': edit_suggestions
