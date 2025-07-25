@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Analyze Resume</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Resume Analyzer</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+
+        <li class="nav-item"><a class="nav-link active" href="{% url 'analyze' %}">Analyze Resume</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'edit_resume' %}">Edit Resume</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'suggestions' %}">Suggestions</a></li>
+        <li class="nav-item"><a class="nav-link" href="/login/">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="/register/">Register</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-5">
+    <h2 class="text-primary mb-4">Upload Your Resume for Analysis</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="mb-3">
+            <label for="job_description" class="form-label">Job Description</label>
+            <textarea name="job_description" id="job_description" class="form-control" rows="4" placeholder="Paste the job description here...">{% if job_description %}{{ job_description }}{% endif %}</textarea>
+        </div>
+        <button type="submit" class="btn btn-success" name="action" value="analyze">Analyze Now</button>
+       
+    </form>
+
+    {% if match_percentage or strengths or weaknesses or suggestions or analysis_result or edit_suggestions %}
+    <div class="mt-4">
+        {% if edit_suggestions %}
+        <h4 class="text-warning">Resume Edit Suggestions:</h4>
+        <div class="alert alert-warning">{{ edit_suggestions }}</div>
+        {% endif %}
+        {% if match_percentage or strengths or weaknesses or suggestions or missing or qualified or analysis_result %}
+        <h4 class="text-success">Analysis Result:</h4>
+        {% if match_percentage %}
+        <div class="mb-3">
+            <label class="form-label">Resume Match Percentage</label>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar bg-info" role="progressbar" style="width: {{ match_percentage }}%; font-size: 1.2rem;" aria-valuenow="{{ match_percentage }}" aria-valuemin="0" aria-valuemax="100">{{ match_percentage }}%</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if qualified %}
+        <div class="mb-2">
+            <strong>Qualified for Role:</strong>
+            <span class="badge {% if qualified == 'yes' %}bg-success{% else %}bg-danger{% endif %}">{{ qualified|title }}</span>
+        </div>
+        {% endif %}
+        {% if strengths %}
+        <div class="mb-2">
+            <strong>Strengths:</strong>
+            <ul>
+                {% for item in strengths %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if weaknesses %}
+        <div class="mb-2">
+            <strong>Weaknesses:</strong>
+            <ul>
+                {% for item in weaknesses %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if missing %}
+        <div class="mb-2">
+            <strong>Missing Requirements:</strong>
+            <ul>
+                {% for item in missing %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if suggestions %}
+        <div class="mb-2">
+            <strong>Suggestions:</strong>
+            <ul>
+                {% for item in suggestions %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if analysis_result %}
+        <div class="alert alert-info mt-3">{{ analysis_result }}</div>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
